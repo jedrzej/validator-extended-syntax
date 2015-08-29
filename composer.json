@@ -1,0 +1,29 @@
+{
+  "name": "jedrzej/validator-extended-syntax",
+  "description": "Laravel 4/5 package that adds validator negation to Laravel's validation module",
+  "keywords": [
+    "laravel",
+    "validation"
+  ],
+  "homepage": "https://github.com/validator-extended-syntax",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Jędrzej Kuryło",
+      "email": "jedrzej.kurylo@gmail.com"
+    }
+  ],
+  "require": {
+    "laravel/framework": "*"
+  },
+  "require-dev": {
+    "codeception/codeception": "2.0.*",
+    "codeception/specify": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Jedrzej\\": "src/Jedrzej/",
+      "Illuminate\\": "vendor/laravel/framework/src/Illuminate/"
+    }
+  }
+}
