@@ -28,4 +28,40 @@ class Validator extends BaseValidator
             $this->addFailure($attribute, $rule, $parameters);
         }
     }
+
+    public function validateIf($attribute, $value, $parameters, Validator $validator)
+    {
+        $this->requireParameterCount(2, $parameters, 'if');
+
+        preg_match_all('/([a-z_]+:[^:]+)(,|$)(?=$|[a-z_]+:)/', implode(',', array_slice($parameters, 1)), $matches);
+        $rules = $matches[0];
+
+        if (empty($rules)) {
+            return true;
+        }
+
+        // all rules except the last one are applied to $otherValue
+        $rulesToCheck = array_slice($rules, 0, count($rules) - 1);
+
+        // last rule will be applied to $attribute
+        // there might be some commas left from splitting
+        $ruleToApply = trim($rules[count($rules) - 1], ',');
+
+        // get the value of the other attribute
+        $otherValue = array_get($validator->getData(), $parameters[0]);
+
+        $rulesToCheck = array_map(function ($rule) {
+            // there might be some commas left from splitting
+            return trim($rule, ',');
+        }, $rulesToCheck);
+
+        // new instance of validator needs to be created so that failing validation of $otherValue doesn't fail validation of $value
+        if (\Validator::make(['value' => $otherValue], ['value' => implode('|', $rulesToCheck)])->fails()) {
+            return true;
+        }
+
+        $this->validate($attribute, $ruleToApply);
+
+        return count($this->messages->all()) == 0;
+    }
 }
