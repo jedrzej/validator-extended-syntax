@@ -15,6 +15,13 @@ class Validator extends BaseValidator
             return;
         }
 
+        // replace placeholders in parameters
+        foreach ($parameters as $index => $parameter) {
+            if (preg_match('/{{([a-zA-Z0-9_\-\.]+)}}/', $parameter, $matches)) {
+                $parameters[$index] = $this->getValue($matches[1]);
+            }
+        }
+
         // We will get the value for the given attribute from the array of data and then
         // verify that the attribute is indeed validatable. Unless the rule implies
         // that the attribute is required, rules are not run for missing values.
