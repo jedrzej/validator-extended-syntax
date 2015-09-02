@@ -40,30 +40,39 @@ class Validator extends BaseValidator
     {
         $this->requireParameterCount(2, $parameters, 'if');
 
-        preg_match_all('/([a-z_]+:[^:]+)(,|$)(?=$|[a-z_]+:)/', implode(',', array_slice($parameters, 1)), $matches);
-        $rules = $matches[0];
+        //preg_match_all('/([a-z_]+:[^:]+)(,|$)(?=$|[a-z_]+:)/', implode(',', array_slice($parameters, 1)), $matches);
+        $rule = implode(',', $parameters);
+        if (!preg_match('/^([a-zA-z_]+,[a-zA-z_]+(:([0-9a-zA-z_]+,?)+);?)*[a-zA-z_]+(:([0-9a-zA-z_]+,?)+)?$/', $rule)) {
+            throw new InvalidArgumentException("Invalid validateIf syntax: " . $rule);
+        }
 
-        if (empty($rules)) {
+        $allRules = explode(';', $rule);
+
+        if (empty($allRules)) {
             return true;
         }
 
-        // all rules except the last one are applied to $otherValue
-        $rulesToCheck = array_slice($rules, 0, count($rules) - 1);
-
         // last rule will be applied to $attribute
-        // there might be some commas left from splitting
-        $ruleToApply = trim($rules[count($rules) - 1], ',');
+        $ruleToApply = $allRules[count($allRules) - 1];
 
-        // get the value of the other attribute
-        $otherValue = array_get($validator->getData(), $parameters[0]);
+        // all rules except the last one are applied to $otherValue
+        $rulesToCheck = array_slice($allRules, 0, count($allRules) - 1);
 
-        $rulesToCheck = array_map(function ($rule) {
-            // there might be some commas left from splitting
-            return trim($rule, ',');
-        }, $rulesToCheck);
+        // build validation array
+        $rules = [];
+        foreach ($rulesToCheck as $ruleToCheck) {
+            list($field, $rule) = explode(',', $ruleToCheck, 2);
+            if ($field != $attribute) {
+                $rules[$field][] = $rule;
+            }
+        }
+
+        $rules = array_map(function($r) {
+            return implode('|', $r);
+        }, $rules);
 
         // new instance of validator needs to be created so that failing validation of $otherValue doesn't fail validation of $value
-        if (\Validator::make(['value' => $otherValue], ['value' => implode('|', $rulesToCheck)])->fails()) {
+        if (\Validator::make($this->getData(), $rules)->fails()) {
             return true;
         }
 
