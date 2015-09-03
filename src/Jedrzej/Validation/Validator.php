@@ -1,9 +1,17 @@
 <?php namespace Jedrzej\Validation;
 
 use Illuminate\Validation\Validator as BaseValidator;
+use Symfony\Component\Translation\TranslatorInterface;
 
 class Validator extends BaseValidator
 {
+    public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages = [], array $customAttributes = [])
+    {
+        $this->implicitRules[] = 'If';
+        $this->implicitRules[] = 'Empty';
+        parent::__construct($translator, $data, $rules, $messages, $customAttributes);
+    }
+
     protected function validate($attribute, $rule)
     {
         $negated = preg_match('/^!/', $rule);
@@ -36,7 +44,7 @@ class Validator extends BaseValidator
         }
     }
 
-    public function validateIf($attribute, $value, $parameters, Validator $validator)
+    protected function validateIf($attribute, $value, $parameters, Validator $validator)
     {
         $this->requireParameterCount(2, $parameters, 'if');
 
@@ -79,5 +87,10 @@ class Validator extends BaseValidator
         $this->validate($attribute, $ruleToApply);
 
         return count($this->messages->all()) == 0;
+    }
+
+    protected function validateEmpty($attribute, $value)
+    {
+        return empty($value);
     }
 }
