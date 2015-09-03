@@ -98,4 +98,55 @@ class Validator extends BaseValidator
 
         return $this->validateIn($attribute, $value, (array)$parameters[0]);
     }
+
+    protected function validateArray($attribute, $value, $parameters)
+    {
+        if (!is_array($value)) return false;
+
+        if (!count($parameters) || !array_key_exists($parameters[0], $this->rules)) return true;
+
+        $rules = $this->rules[$parameters[0]];
+
+        $validator = \Validator::make($value, $rules);
+        if($validator->fails()) {
+            foreach ($validator->messages()->getMessages() as $key => $messages) {
+                foreach ($messages as $message) {
+                    $this->messages()->add(sprintf('%s.%s', $attribute, $key), $message);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    protected function validateJson($attribute, $value, $parameters) {
+        $value = json_decode($value, true);
+
+        if(json_last_error() !== JSON_ERROR_NONE || empty($parameters)) {
+            return json_last_error() !== JSON_ERROR_NONE;
+        }
+
+        return $this->validateArray($attribute, $value, $parameters);
+    }
+
+    public function passes()
+    {
+        $this->messages = new MessageBag;
+
+        foreach ($this->rules as $attribute => $rules) {
+            if(preg_match('/^@/', $attribute)) {
+                continue;
+            }
+
+            foreach ($rules as $rule) {
+                $this->validate($attribute, $rule);
+            }
+        }
+
+        foreach ($this->after as $after) {
+            call_user_func($after);
+        }
+
+        return count($this->messages->all()) === 0;
+    }
 }

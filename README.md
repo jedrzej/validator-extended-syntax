@@ -89,3 +89,20 @@ Some examples:
       'email'        => 'if:is_active,accepted;account_type,required;account_type,in:admin,moderator;required'
     ];
 ```
+
+### Validating arrays and JSON fields
+
+Package offers new syntax for validationg array structures and adds such possibility for JSON fields.
+
+```php
+   $data = [
+     // someArrayField needs to be array that contains age and email
+     'someArrayField' => 'array:@someRules',
+     // someJSONField needs to be valid JSON that contains age and email
+     'someJSONField'  => 'json:@someRules',
+     '@someRules' => [
+       'age' => 'required|numeric',
+       'email' => 'required|email'
+     ],
+   ];
+'''
