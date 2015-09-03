@@ -8,7 +8,6 @@ class Validator extends BaseValidator
     public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages = [], array $customAttributes = [])
     {
         $this->implicitRules[] = 'If';
-        $this->implicitRules[] = 'Empty';
         parent::__construct($translator, $data, $rules, $messages, $customAttributes);
     }
 
@@ -92,5 +91,11 @@ class Validator extends BaseValidator
     protected function validateEmpty($attribute, $value)
     {
         return empty($value);
+    }
+
+    protected function validateEquals($attribute, $value, $parameters) {
+        $this->requireParameterCount(1, $parameters, 'equals');
+
+        return $this->validateIn($attribute, $value, (array)$parameters[0]);
     }
 }
