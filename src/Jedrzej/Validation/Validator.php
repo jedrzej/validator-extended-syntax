@@ -5,9 +5,12 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class Validator extends BaseValidator
 {
-    public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages = [], array $customAttributes = [])
+    protected $aliases = [];
+
+    public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages = [], array $customAttributes = [], array $aliases = [])
     {
         $this->implicitRules[] = 'If';
+        $this->aliases = $aliases;
         parent::__construct($translator, $data, $rules, $messages, $customAttributes);
     }
 
@@ -17,6 +20,10 @@ class Validator extends BaseValidator
         $rule = $negated ? substr($rule, 1) : $rule;
 
         list($rule, $parameters) = $this->parseRule($rule);
+
+        if ($this->isAlias($rule)) {
+            list($rule, $parameters) = $this->parseAlias($rule, $parameters);
+        }
 
         if ($rule == '') {
             return;
@@ -74,7 +81,7 @@ class Validator extends BaseValidator
             }
         }
 
-        $rules = array_map(function($r) {
+        $rules = array_map(function ($r) {
             return implode('|', $r);
         }, $rules);
 
@@ -93,7 +100,8 @@ class Validator extends BaseValidator
         return empty($value);
     }
 
-    protected function validateEquals($attribute, $value, $parameters) {
+    protected function validateEquals($attribute, $value, $parameters)
+    {
         $this->requireParameterCount(1, $parameters, 'equals');
 
         return $this->validateIn($attribute, $value, (array)$parameters[0]);
@@ -108,7 +116,7 @@ class Validator extends BaseValidator
         $rules = $this->rules[$parameters[0]];
 
         $validator = \Validator::make($value, $rules);
-        if($validator->fails()) {
+        if ($validator->fails()) {
             foreach ($validator->messages()->getMessages() as $key => $messages) {
                 foreach ($messages as $message) {
                     $this->messages()->add(sprintf('%s.%s', $attribute, $key), $message);
@@ -119,10 +127,11 @@ class Validator extends BaseValidator
         return true;
     }
 
-    protected function validateJson($attribute, $value, $parameters) {
+    protected function validateJson($attribute, $value, $parameters)
+    {
         $value = json_decode($value, true);
 
-        if(json_last_error() !== JSON_ERROR_NONE || empty($parameters)) {
+        if (json_last_error() !== JSON_ERROR_NONE || empty($parameters)) {
             return json_last_error() !== JSON_ERROR_NONE;
         }
 
@@ -134,7 +143,7 @@ class Validator extends BaseValidator
         $this->messages = new MessageBag;
 
         foreach ($this->rules as $attribute => $rules) {
-            if(preg_match('/^@/', $attribute)) {
+            if (preg_match('/^@/', $attribute)) {
                 continue;
             }
 
@@ -149,4 +158,22 @@ class Validator extends BaseValidator
 
         return count($this->messages->all()) === 0;
     }
+
+    protected function isAlias($rule) {
+        return array_key_exists($rule, $this->aliases);
+    }
+
+    protected function parseAlias($rule, array $parameters = []) {
+        $aliasedRule = $this->aliases[$rule];
+        while(preg_match('/\?/', $aliasedRule) && !empty($parameters)) {
+            $aliasedRule = preg_replace('/\?/', array_shift($parameters), $aliasedRule, 1);
+        }
+
+        if (!empty($parameters)) {
+            $aliasedRule .= ',' . implode(',', $parameters);
+        }
+
+        return $this->parseRule($aliasedRule);
+    }
+
 }

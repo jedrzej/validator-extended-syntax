@@ -1,6 +1,14 @@
 # Extended Validation for Laravel 4/5
 
-This package adds negation syntax to Laravel's validation component.
+# THIS PACKAGE IS STILL GA WORK IN PROGRESS. IT HASN'T BEEN TESTED. USE AT YOUR OWN RISK :)
+
+This package extends Laravel's validation syntax with the following:
+
+- negating validation rules
+- conditional validation rules
+- using automatically replaced placeholders
+- validating array and JSON structure
+- aliasing validation rule configurations
 
 ## Composer install
 
@@ -106,3 +114,32 @@ Package offers new syntax for validationg array structures and adds such possibi
      ],
    ];
 '''
+
+### Aliasing validation rules
+
+It is possible to alias often used rule configuration to allow for reuse. This is an alternative to writing custom validation rules.
+
+```php
+    // validate if string is a hex calue
+    Validator::alias('hex', 'regex:^[0-9a-fA-F]+$);
+    $rules = [
+      'value' => 'hex'
+    ];
+    $validator = Validator::make($data, $rules);
+
+    // passing arguments to aliases
+    // validate number is a positive integer no larger than 100
+    Validator::alias('positive_limited', 'between:1,?');
+    $rules = [
+      'value' => 'positive_limited:100'
+    ];
+    $validator = Validator::make($data, $rules);
+
+    // record exists with is_active flag set
+    Validator::alias('active_exists', 'exists:?,?,is_active,1');
+    $rules = [
+      'user_id' => 'active_exists:users,id'
+    ];
+    $validator = Validator::make($data, $rules);
+```
+
