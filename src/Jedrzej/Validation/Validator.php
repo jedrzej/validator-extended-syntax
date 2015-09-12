@@ -183,4 +183,29 @@ class Validator extends BaseValidator
         return $this->parseRule($aliasedRule);
     }
 
+    protected function validateList($attribute, $values, $parameters) {
+        if (!is_array($values)) {
+            return false;
+        }
+
+        if (!count($parameters) || !array_key_exists($parameters[0], $this->rules)) return true;
+
+        $rules = $this->rules[$parameters[0]];
+        $passes = true;
+        $i = 0;
+        foreach ($values as $value) {
+            $validator = \Validator::make($value, $rules);
+            if ($validator->fails()) {
+                $passes = false;
+                foreach ($validator->messages()->getMessages() as $key => $messages) {
+                    foreach ($messages as $message) {
+                        $this->messages()->add(sprintf('%s.%d.%s', $attribute, $i, $key), $message);
+                    }
+                }
+            }
+            ++$i;
+        }
+
+        return $passes;
+    }
 }
