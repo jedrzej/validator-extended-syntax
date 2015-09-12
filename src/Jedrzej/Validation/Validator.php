@@ -1,6 +1,7 @@
 <?php namespace Jedrzej\Validation;
 
 use Illuminate\Validation\Validator as BaseValidator;
+use InvalidArgumentException;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Validator extends BaseValidator
@@ -32,7 +33,13 @@ class Validator extends BaseValidator
         // replace placeholders in parameters
         foreach ($parameters as $index => $parameter) {
             if (preg_match('/{{([a-zA-Z0-9_\-\.]+)}}/', $parameter, $matches)) {
-                $parameters[$index] = $this->getValue($matches[1]);
+                if (!is_null($value = $this->getValue($matches[1]))) {
+                    $parameters[$index] = $value;
+                } else if (!is_null($value = Config::get($matches[1]))) {
+                    $parameters[$index] = $value;
+                } else {
+                    throw new InvalidArgumentException(sprintf('No value available for placeholder "%s".', $matches[1]));
+                }
             }
         }
 
