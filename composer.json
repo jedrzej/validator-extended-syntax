@@ -14,11 +14,13 @@
     }
   ],
   "require": {
-    "laravel/framework": "*"
+    "illuminate/support": "*",
+    "illuminate/validation": "*"
   },
   "require-dev": {
     "codeception/codeception": "2.0.*",
-    "codeception/specify": "*"
+    "codeception/specify": "*",
+    "mockery/mockery": "^0.9.4"
   },
   "autoload": {
     "psr-4": {

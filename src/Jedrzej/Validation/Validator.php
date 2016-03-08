@@ -1,5 +1,7 @@
 <?php namespace Jedrzej\Validation;
 
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Validator as BaseValidator;
 use InvalidArgumentException;
 use Symfony\Component\Translation\TranslatorInterface;
@@ -10,7 +12,6 @@ class Validator extends BaseValidator
 
     public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages = [], array $customAttributes = [], array $aliases = [])
     {
-        $this->implicitRules[] = 'If';
         $this->aliases = $aliases;
         parent::__construct($translator, $data, $rules, $messages, $customAttributes);
     }
@@ -50,99 +51,11 @@ class Validator extends BaseValidator
 
         $validatable = $this->isValidatable($rule, $attribute, $value);
 
-        $method = "validate{$rule}";
+        $method = 'validate' . $rule;
 
         if ($validatable && ($this->$method($attribute, $value, $parameters, $this) == $negated)) {
             $this->addFailure($attribute, $rule, $parameters);
         }
-    }
-
-    protected function validateIf($attribute, $value, $parameters, Validator $validator)
-    {
-        $this->requireParameterCount(2, $parameters, 'if');
-
-        //preg_match_all('/([a-z_]+:[^:]+)(,|$)(?=$|[a-z_]+:)/', implode(',', array_slice($parameters, 1)), $matches);
-        $rule = implode(',', $parameters);
-        if (!preg_match('/^([a-zA-z_]+,[a-zA-z_]+(:([0-9a-zA-z_]+,?)+);?)*[a-zA-z_]+(:([0-9a-zA-z_]+,?)+)?$/', $rule)) {
-            throw new InvalidArgumentException("Invalid validateIf syntax: " . $rule);
-        }
-
-        $allRules = explode(';', $rule);
-
-        if (empty($allRules)) {
-            return true;
-        }
-
-        // last rule will be applied to $attribute
-        $ruleToApply = $allRules[count($allRules) - 1];
-
-        // all rules except the last one are applied to $otherValue
-        $rulesToCheck = array_slice($allRules, 0, count($allRules) - 1);
-
-        // build validation array
-        $rules = [];
-        foreach ($rulesToCheck as $ruleToCheck) {
-            list($field, $rule) = explode(',', $ruleToCheck, 2);
-            if ($field != $attribute) {
-                $rules[$field][] = $rule;
-            }
-        }
-
-        $rules = array_map(function ($r) {
-            return implode('|', $r);
-        }, $rules);
-
-        // new instance of validator needs to be created so that failing validation of $otherValue doesn't fail validation of $value
-        if (\Validator::make($this->getData(), $rules)->fails()) {
-            return true;
-        }
-
-        $this->validate($attribute, $ruleToApply);
-
-        return count($this->messages->all()) == 0;
-    }
-
-    protected function validateEmpty($attribute, $value)
-    {
-        return empty($value);
-    }
-
-    protected function validateEquals($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'equals');
-
-        return $this->validateIn($attribute, $value, (array)$parameters[0]);
-    }
-
-    protected function validateArray($attribute, $value, $parameters)
-    {
-        if (!is_array($value)) return false;
-
-        if (!count($parameters) || !array_key_exists($parameters[0], $this->rules)) return true;
-
-        $rules = $this->rules[$parameters[0]];
-
-        $validator = \Validator::make($value, $rules);
-        if ($validator->fails()) {
-            foreach ($validator->messages()->getMessages() as $key => $messages) {
-                foreach ($messages as $message) {
-                    $this->messages()->add(sprintf('%s.%s', $attribute, $key), $message);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    protected function validateJson($attribute, $value, $parameters)
-    {
-        $value = json_decode($value, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE || empty($parameters)) {
-            return json_last_error() !== JSON_ERROR_NONE;
-        }
-
-        return $this->validateArray($attribute, $value, $parameters);
     }
 
     public function passes()
@@ -181,31 +94,5 @@ class Validator extends BaseValidator
         }
 
         return $this->parseRule($aliasedRule);
-    }
-
-    protected function validateList($attribute, $values, $parameters) {
-        if (!is_array($values)) {
-            return false;
-        }
-
-        if (!count($parameters) || !array_key_exists($parameters[0], $this->rules)) return true;
-
-        $rules = $this->rules[$parameters[0]];
-        $passes = true;
-        $i = 0;
-        foreach ($values as $value) {
-            $validator = \Validator::make($value, $rules);
-            if ($validator->fails()) {
-                $passes = false;
-                foreach ($validator->messages()->getMessages() as $key => $messages) {
-                    foreach ($messages as $message) {
-                        $this->messages()->add(sprintf('%s.%d.%s', $attribute, $i, $key), $message);
-                    }
-                }
-            }
-            ++$i;
-        }
-
-        return $passes;
     }
 }
