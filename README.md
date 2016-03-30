@@ -10,11 +10,11 @@ This package extends Laravel's validation syntax with the following:
 
 Add the following line to `composer.json` file in your project:
 
-    "jedrzej/validator-extended-syntax": "0.0.2"
+    "jedrzej/validator-extended-syntax": "0.0.3"
 
 or run the following in the commandline in your project's root folder:
 
-    composer require "jedrzej/validator-extended-syntax" "0.0.2"
+    composer require "jedrzej/validator-extended-syntax" "0.0.3"
 
 ## Usage
 
@@ -85,7 +85,7 @@ Negated validation rules will fail when not negated rule would pass and vice ver
 
 If validation of one field needs to use the value of another field as parameter, you can use a `{{parameter_name}}` placeholder in rule definition instead of parameter value.
 Value of corresponding field will be passed to validator instead of the placeholder. If the corresponding value is missing in
-validated data set, the value will be taken from Config.
+validated data set, the value will be taken from Config. If it's missing in config, `NULL` will be used.
 
 ```php
     $rules = [

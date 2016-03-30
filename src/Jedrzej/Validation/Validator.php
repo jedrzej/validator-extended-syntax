@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Validator as BaseValidator;
-use InvalidArgumentException;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class Validator extends BaseValidator
@@ -39,7 +38,7 @@ class Validator extends BaseValidator
                 } else if (!is_null($value = Config::get($matches[1]))) {
                     $parameters[$index] = $value;
                 } else {
-                    throw new InvalidArgumentException(sprintf('No value available for placeholder "%s".', $matches[1]));
+                    $parameters[$index] = 'NULL';
                 }
             }
         }
