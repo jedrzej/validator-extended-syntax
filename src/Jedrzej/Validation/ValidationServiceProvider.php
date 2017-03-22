@@ -1,15 +1,10 @@
 <?php namespace Jedrzej\Validation;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\ValidationServiceProvider as BaseValidationServiceProvider;
 
-class ValidationServiceProvider extends ServiceProvider
+class ValidationServiceProvider extends BaseValidationServiceProvider
 {
-    public function boot()
-    {
-        //
-    }
-
-    public function register()
+    protected function registerValidationFactory()
     {
         $this->app->singleton('validator', function ($app) {
             $validator = new Factory($app['translator'], $app);
